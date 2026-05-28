@@ -11,7 +11,9 @@ shell:
 # https://github.com/bitcoin/bitcoin/blob/master/doc/developer-notes.md#using-lcov
 build:
 	cmake -B build \
-		-DCMAKE_BUILD_TYPE=Coverage
+		-DCMAKE_BUILD_TYPE=Coverage \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_CXX_COMPILER=g++
 	cmake --build build -j ${NUM_JOBS}
 
 test:
