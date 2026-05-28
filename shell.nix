@@ -12,6 +12,7 @@ mkShell {
     pkg-config
     libevent
     python3
+    lcov
   ];
 
   shellHook = ''
