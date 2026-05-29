@@ -573,6 +573,69 @@ jobs:
       - name: Save caches
         uses: ./.github/actions/save-caches
 
+  coverage:
+    name: 'coverage'
+    needs: runners
+    runs-on: ${{ needs.runners.outputs.provider == 'cirrus' && 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-md' || 'ubuntu-24.04' }}
+    if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
+    timeout-minutes: 240
+
+    env:
+      TEST_RUNNER_PORT_MIN: "14000"
+
+    steps:
+      - *ANNOTATION_PR_NUMBER
+
+      - *CHECKOUT
+
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --no-upgrade -y \
+            clang llvm build-essential cmake ninja-build pkgconf python3-pip python3-zmq \
+            libevent-dev libboost-dev libsqlite3-dev systemtap-sdt-dev libzmq3-dev \
+            qt6-base-dev qt6-tools-dev qt6-l10n-tools libqrencode-dev capnproto libcapnp-dev
+          sudo pip3 install --break-system-packages pycapnp
+
+      - name: Build with coverage instrumentation
+        run: |
+          cmake -B build -DCMAKE_C_COMPILER="clang" \
+            -DCMAKE_CXX_COMPILER="clang++" \
+            -DAPPEND_CFLAGS="-fprofile-instr-generate -fcoverage-mapping" \
+            -DAPPEND_CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping" \
+            -DAPPEND_LDFLAGS="-fprofile-instr-generate -fcoverage-mapping"
+          cmake --build build -j 1
+
+      - name: Run tests and merge coverage data
+        run: |
+          mkdir -p build/raw_profile_data
+          LLVM_PROFILE_FILE="${GITHUB_WORKSPACE}/build/raw_profile_data/%m_%p.profraw" ctest --test-dir build -j 1
+          LLVM_PROFILE_FILE="${GITHUB_WORKSPACE}/build/raw_profile_data/%m_%p.profraw" build/test/functional/test_runner.py -j 1
+          find build/raw_profile_data -name "*.profraw" > build/raw_profile_data_files.txt
+          llvm-profdata merge -f build/raw_profile_data_files.txt -o build/coverage.profdata
+
+      - name: Generate HTML coverage report
+        run: |
+          llvm-cov show \
+            --object=build/bin/test_bitcoin \
+            --object=build/bin/bitcoind \
+            -Xdemangler=llvm-cxxfilt \
+            --instr-profile=build/coverage.profdata \
+            --ignore-filename-regex="src/crc32c/|src/leveldb/|src/minisketch/|src/secp256k1/|src/test/" \
+            --format=html \
+            --show-instantiation-summary \
+            --show-line-counts-or-regions \
+            --show-expansions \
+            --output-dir=build/coverage_report \
+            --project-title="Bitcoin Core Coverage Report"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report-${{ github.run_id }}
+          path: build/coverage_report
+          if-no-files-found: error
+
   lint:
     name: 'lint'
     needs: runners
