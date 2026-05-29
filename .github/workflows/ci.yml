@@ -28,31 +28,31 @@ defaults:
     shell: bash
 
 jobs:
-  # runners:
-  #   name: '[meta] determine runners'
-  #   runs-on: ubuntu-slim
-  #   outputs:
-  #     provider: ${{ steps.runners.outputs.provider }}
-  #   steps:
-  #     - &ANNOTATION_PR_NUMBER
-  #       name: Annotate with pull request number
-  #       # This annotation is machine-readable and can be used to assign a check
-  #       # run to its corresponding pull request. Running in all check runs is
-  #       # required, because check re-runs discard the annotations of other
-  #       # tasks in the test suite.
-  #       run: |
-  #         if [ "${{ github.event_name }}" = "pull_request" ]; then
-  #           echo "::notice title=debug_pull_request_number_str::${{ github.event.number }}"
-  #         fi
-  #     - id: runners
-  #       run: |
-  #         if [[ "${REPO_USE_CIRRUS_RUNNERS}" == "${{ github.repository }}" ]]; then
-  #           echo "provider=cirrus" >> "$GITHUB_OUTPUT"
-  #           echo "::notice title=Runner Selection::Using Cirrus Runners"
-  #         else
-  #           echo "provider=gha" >> "$GITHUB_OUTPUT"
-  #           echo "::notice title=Runner Selection::Using GitHub-hosted runners"
-  #         fi
+  runners:
+    name: '[meta] determine runners'
+    runs-on: ubuntu-slim
+    outputs:
+      provider: ${{ steps.runners.outputs.provider }}
+    steps:
+      - &ANNOTATION_PR_NUMBER
+        name: Annotate with pull request number
+        # This annotation is machine-readable and can be used to assign a check
+        # run to its corresponding pull request. Running in all check runs is
+        # required, because check re-runs discard the annotations of other
+        # tasks in the test suite.
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "::notice title=debug_pull_request_number_str::${{ github.event.number }}"
+          fi
+      - id: runners
+        run: |
+          if [[ "${REPO_USE_CIRRUS_RUNNERS}" == "${{ github.repository }}" ]]; then
+            echo "provider=cirrus" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Runner Selection::Using Cirrus Runners"
+          else
+            echo "provider=gha" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Runner Selection::Using GitHub-hosted runners"
+          fi
 
   # test-each-commit:
   #   name: 'test ancestor commits'
@@ -122,95 +122,95 @@ jobs:
   #         # Run tests on commits after the last merge commit and before the PR head commit
   #         git rebase --exec "git merge --no-commit origin/${GITHUB_BASE_REF} && python3 ./.github/ci-test-each-commit-exec.py && git reset --hard" ${{ env.TEST_BASE }}
 
-  # macos-native-arm64:
-  #   name: ${{ matrix.job-name }}
-  #   # Use any image to support the xcode-select below, but hardcode version to avoid silent upgrades (and breaks).
-  #   # See: https://github.com/actions/runner-images#available-images.
-  #   runs-on: macos-15
+  macos-native-arm64:
+    name: ${{ matrix.job-name }}
+    # Use any image to support the xcode-select below, but hardcode version to avoid silent upgrades (and breaks).
+    # See: https://github.com/actions/runner-images#available-images.
+    runs-on: macos-15
 
-  #   # When a contributor maintains a fork of the repo, any pull request they make
-  #   # to their own fork, or to the main repository, will trigger two CI runs:
-  #   # one for the branch push and one for the pull request.
-  #   # This can be avoided by setting SKIP_BRANCH_PUSH=true as a custom env variable
-  #   # in Github repository settings.
-  #   if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
+    # When a contributor maintains a fork of the repo, any pull request they make
+    # to their own fork, or to the main repository, will trigger two CI runs:
+    # one for the branch push and one for the pull request.
+    # This can be avoided by setting SKIP_BRANCH_PUSH=true as a custom env variable
+    # in Github repository settings.
+    if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
 
-  #   timeout-minutes: 120
+    timeout-minutes: 120
 
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       job-type: [standard, fuzz]
-  #       include:
-  #         - job-type: standard
-  #           file-env: './ci/test/00_setup_env_mac_native.sh'
-  #           job-name: 'macOS native'
-  #         - job-type: fuzz
-  #           file-env: './ci/test/00_setup_env_mac_native_fuzz.sh'
-  #           job-name: 'macOS native, fuzz'
+    strategy:
+      fail-fast: false
+      matrix:
+        job-type: [standard, fuzz]
+        include:
+          - job-type: standard
+            file-env: './ci/test/00_setup_env_mac_native.sh'
+            job-name: 'macOS native'
+          - job-type: fuzz
+            file-env: './ci/test/00_setup_env_mac_native_fuzz.sh'
+            job-name: 'macOS native, fuzz'
 
-  #   env:
-  #     DANGER_RUN_CI_ON_HOST: 1
-  #     BASE_ROOT_DIR: ${{ github.workspace }}/repo_archive
+    env:
+      DANGER_RUN_CI_ON_HOST: 1
+      BASE_ROOT_DIR: ${{ github.workspace }}/repo_archive
 
-  #   steps:
-  #     - *ANNOTATION_PR_NUMBER
+    steps:
+      - *ANNOTATION_PR_NUMBER
 
-  #     - &CHECKOUT
-  #       name: Checkout
-  #       uses: actions/checkout@v6
-  #       with:
-  #         # Ensure the latest merged pull request state is used, even on re-runs.
-  #         ref: &CHECKOUT_REF_TMPL ${{ github.event_name == 'pull_request' && github.ref || '' }}
+      - &CHECKOUT
+        name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # Ensure the latest merged pull request state is used, even on re-runs.
+          ref: &CHECKOUT_REF_TMPL ${{ github.event_name == 'pull_request' && github.ref || '' }}
 
-  #     - name: Clang version
-  #       run: |
-  #         # Use the latest Xcode supported by the version of macOS denoted in
-  #         # doc/release-notes-empty-template.md and providing at least the
-  #         # minimum clang version denoted in doc/dependencies.md.
-  #         # See: https://developer.apple.com/documentation/xcode-release-notes/xcode-16_2-release-notes
-  #         sudo xcode-select --switch /Applications/Xcode_16.2.app
-  #         clang --version
+      - name: Clang version
+        run: |
+          # Use the latest Xcode supported by the version of macOS denoted in
+          # doc/release-notes-empty-template.md and providing at least the
+          # minimum clang version denoted in doc/dependencies.md.
+          # See: https://developer.apple.com/documentation/xcode-release-notes/xcode-16_2-release-notes
+          sudo xcode-select --switch /Applications/Xcode_16.2.app
+          clang --version
 
-  #     - name: Install Homebrew packages
-  #       env:
-  #         HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
-  #       run: |
-  #         # A workaround for "The `brew link` step did not complete successfully" error.
-  #         brew install --quiet python@3 || brew link --overwrite python@3
-  #         brew install --quiet coreutils ninja pkgconf ccache boost libevent zeromq qt@6 qrencode capnp
+      - name: Install Homebrew packages
+        env:
+          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
+        run: |
+          # A workaround for "The `brew link` step did not complete successfully" error.
+          brew install --quiet python@3 || brew link --overwrite python@3
+          brew install --quiet coreutils ninja pkgconf ccache boost libevent zeromq qt@6 qrencode capnp
 
-  #     - name: Set Ccache directory
-  #       run: echo "CCACHE_DIR=${RUNNER_TEMP}/ccache_dir" >> "$GITHUB_ENV"
+      - name: Set Ccache directory
+        run: echo "CCACHE_DIR=${RUNNER_TEMP}/ccache_dir" >> "$GITHUB_ENV"
 
-  #     - name: Restore Ccache cache
-  #       id: ccache-cache
-  #       uses: actions/cache/restore@v5
-  #       with:
-  #         path: ${{ env.CCACHE_DIR }}
-  #         key: ${{ github.job }}-${{ matrix.job-type }}-ccache-${{ github.run_id }}
-  #         restore-keys: ${{ github.job }}-${{ matrix.job-type }}-ccache-
+      - name: Restore Ccache cache
+        id: ccache-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ github.job }}-${{ matrix.job-type }}-ccache-${{ github.run_id }}
+          restore-keys: ${{ github.job }}-${{ matrix.job-type }}-ccache-
 
-  #     - name: Create git archive
-  #       run: |
-  #         git log -1
-  #         git archive --format=tar --prefix=repo_archive/ --output=repo.tar HEAD
-  #         tar -xf repo.tar
+      - name: Create git archive
+        run: |
+          git log -1
+          git archive --format=tar --prefix=repo_archive/ --output=repo.tar HEAD
+          tar -xf repo.tar
 
-  #     - name: CI script
-  #       run: |
-  #         cd repo_archive
-  #         ./ci/test_run_all.sh
-  #       env:
-  #         FILE_ENV: ${{ matrix.file-env }}
+      - name: CI script
+        run: |
+          cd repo_archive
+          ./ci/test_run_all.sh
+        env:
+          FILE_ENV: ${{ matrix.file-env }}
 
-  #     - name: Save Ccache cache
-  #       uses: actions/cache/save@v5
-  #       if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch && steps.ccache-cache.outputs.cache-hit != 'true'
-  #       with:
-  #         path: ${{ env.CCACHE_DIR }}
-  #         # https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
-  #         key: ${{ steps.ccache-cache.outputs.cache-primary-key }}
+      - name: Save Ccache cache
+        uses: actions/cache/save@v5
+        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch && steps.ccache-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          # https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
+          key: ${{ steps.ccache-cache.outputs.cache-primary-key }}
 
   # windows-native-dll:
   #   name: ${{ matrix.job-name }}
