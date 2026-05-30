@@ -581,23 +581,20 @@ jobs:
     timeout-minutes: 240
 
     env:
+      FILE_ENV: './ci/test/00_setup_env_native_coverage.sh'
       TEST_RUNNER_PORT_MIN: "14000"
-      CCACHE_DIR: ${{ runner.temp }}/ccache_dir
-      CONTAINER_NAME: "ci_native_coverage"
 
     steps:
       - *ANNOTATION_PR_NUMBER
 
       - *CHECKOUT
 
-      - name: Restore Ccache cache
-        id: ccache-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ env.CONTAINER_NAME }}-${{ github.run_id }}
-          restore-keys: |
-            ccache-${{ env.CONTAINER_NAME }}-
+      - name: Configure environment
+        uses: ./.github/actions/configure-environment
+
+      - name: Restore caches
+        id: restore-cache
+        uses: ./.github/actions/restore-caches
 
       - name: Install packages
         run: |
@@ -653,12 +650,8 @@ jobs:
           path: build/coverage_report
           if-no-files-found: error
 
-      - name: Save Ccache cache
-        uses: actions/cache/save@v5
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ steps.ccache-cache.outputs.cache-primary-key }}
+      - name: Save caches
+        uses: ./.github/actions/save-caches
 
   # lint:
   #   name: 'lint'
