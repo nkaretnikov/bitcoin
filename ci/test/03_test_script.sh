@@ -214,9 +214,15 @@ if [ "$RUN_FUNCTIONAL_TESTS" = "true" ]; then
 fi
 
 if [ "$RUN_COVERAGE" = "true" ]; then
+  LLVM_PROFDATA_BIN=llvm-profdata
+  LLVM_COV_BIN=llvm-cov
+  if [ -n "${APT_LLVM_V}" ]; then
+    LLVM_PROFDATA_BIN="llvm-profdata-${APT_LLVM_V}"
+    LLVM_COV_BIN="llvm-cov-${APT_LLVM_V}"
+  fi
   find "${BASE_BUILD_DIR}/raw_profile_data" -name "*.profraw" > "${BASE_BUILD_DIR}/raw_profile_data_files.txt"
-  llvm-profdata merge -f "${BASE_BUILD_DIR}/raw_profile_data_files.txt" -o "${BASE_BUILD_DIR}/coverage.profdata"
-  llvm-cov show \
+  "${LLVM_PROFDATA_BIN}" merge -f "${BASE_BUILD_DIR}/raw_profile_data_files.txt" -o "${BASE_BUILD_DIR}/coverage.profdata"
+  "${LLVM_COV_BIN}" show \
     --object="${BASE_BUILD_DIR}/bin/test_bitcoin" \
     --object="${BASE_BUILD_DIR}/bin/bitcoind" \
     -Xdemangler=llvm-cxxfilt \
