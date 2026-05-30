@@ -216,16 +216,18 @@ fi
 if [ "$RUN_COVERAGE" = "true" ]; then
   LLVM_PROFDATA_BIN=llvm-profdata
   LLVM_COV_BIN=llvm-cov
+  LLVM_CXXFILT_BIN=llvm-cxxfilt
   if [ -n "${APT_LLVM_V}" ]; then
     LLVM_PROFDATA_BIN="llvm-profdata-${APT_LLVM_V}"
     LLVM_COV_BIN="llvm-cov-${APT_LLVM_V}"
+    LLVM_CXXFILT_BIN="llvm-cxxfilt-${APT_LLVM_V}"
   fi
   find "${BASE_BUILD_DIR}/raw_profile_data" -name "*.profraw" > "${BASE_BUILD_DIR}/raw_profile_data_files.txt"
   "${LLVM_PROFDATA_BIN}" merge -f "${BASE_BUILD_DIR}/raw_profile_data_files.txt" -o "${BASE_BUILD_DIR}/coverage.profdata"
   "${LLVM_COV_BIN}" show \
     --object="${BASE_BUILD_DIR}/bin/test_bitcoin" \
     --object="${BASE_BUILD_DIR}/bin/bitcoind" \
-    -Xdemangler=llvm-cxxfilt \
+    -Xdemangler="${LLVM_CXXFILT_BIN}" \
     --instr-profile="${BASE_BUILD_DIR}/coverage.profdata" \
     --ignore-filename-regex="src/crc32c/|src/leveldb/|src/minisketch/|src/secp256k1/|src/test/" \
     --format=html \
