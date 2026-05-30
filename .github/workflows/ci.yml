@@ -583,6 +583,7 @@ jobs:
     env:
       TEST_RUNNER_PORT_MIN: "14000"
       CCACHE_DIR: ${{ runner.temp }}/ccache_dir
+      CONTAINER_NAME: "ci_native_coverage"
 
     steps:
       - *ANNOTATION_PR_NUMBER
@@ -594,10 +595,9 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: coverage-ccache-${{ runner.os }}-${{ github.head_ref || github.ref_name }}-${{ github.run_id }}
+          key: ccache-${{ env.CONTAINER_NAME }}-${{ github.run_id }}
           restore-keys: |
-            coverage-ccache-${{ runner.os }}-${{ github.head_ref || github.ref_name }}-
-            coverage-ccache-${{ runner.os }}-
+            ccache-${{ env.CONTAINER_NAME }}-
 
       - name: Install packages
         run: |
