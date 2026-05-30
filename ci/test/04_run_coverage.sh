@@ -9,6 +9,7 @@ export LC_ALL=C.UTF-8
 set -o errexit -o pipefail -o xtrace
 
 NUM_JOBS=${NUM_JOBS:-1}
+MAKEJOBS=${MAKEJOBS:--j${NUM_JOBS}}
 BUILD_DIR=${BUILD_DIR:-build}
 RAW_PROFILE_DIR="${BUILD_DIR}/raw_profile_data"
 RAW_PROFILE_FILE="${PWD}/${RAW_PROFILE_DIR}/%m_%p.profraw"
@@ -29,7 +30,7 @@ build() {
     -DAPPEND_CFLAGS="-fprofile-instr-generate -fcoverage-mapping" \
     -DAPPEND_CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping" \
     -DAPPEND_LDFLAGS="-fprofile-instr-generate -fcoverage-mapping"
-  cmake --build "${BUILD_DIR}" -j "${NUM_JOBS}"
+  cmake --build "${BUILD_DIR}" "${MAKEJOBS}"
 
   if command -v ccache >/dev/null 2>&1; then
     ccache --show-stats --verbose

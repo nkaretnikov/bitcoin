@@ -607,7 +607,7 @@ jobs:
 
       - name: Run coverage build and tests
         run: |
-          NUM_JOBS=1 ./ci/test/04_run_coverage.sh all
+          ./ci/test/04_run_coverage.sh all
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
