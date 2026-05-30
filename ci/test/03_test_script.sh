@@ -236,7 +236,14 @@ if [ "$RUN_COVERAGE" = "true" ]; then
     --show-expansions \
     --output-dir="${BASE_BUILD_DIR}/coverage_report" \
     --project-title="Bitcoin Core Coverage Report"
+  "${LLVM_COV_BIN}" export \
+    --object="${BASE_BUILD_DIR}/bin/test_bitcoin" \
+    --object="${BASE_BUILD_DIR}/bin/bitcoind" \
+    -Xdemangler="${LLVM_CXXFILT_BIN}" \
+    --instr-profile="${BASE_BUILD_DIR}/coverage.profdata" \
+    > "${BASE_BUILD_DIR}/coverage.json"
   chmod -R a+rX "${BASE_BUILD_DIR}/coverage_report"
+  chmod a+r "${BASE_BUILD_DIR}/coverage.json"
 fi
 
 if [ "${RUN_TIDY}" = "true" ]; then

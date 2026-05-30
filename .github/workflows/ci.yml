@@ -607,6 +607,17 @@ jobs:
       - name: CI script
         run: ./ci/test_run_all.sh
 
+      - name: Fetch PR base
+        if: github.event_name == 'pull_request'
+        run: git fetch origin "${GITHUB_BASE_REF}"
+
+      - name: Diff coverage
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 ./contrib/devtools/diff_coverage.py \
+            --coverage-json "${BASE_BUILD_DIR}/coverage.json" \
+            --base "origin/${GITHUB_BASE_REF}"
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
         with:
