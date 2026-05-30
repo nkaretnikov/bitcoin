@@ -581,6 +581,7 @@ jobs:
     timeout-minutes: 240
 
     env:
+      DANGER_CI_ON_HOST_FOLDERS: 1
       FILE_ENV: './ci/test/00_setup_env_native_coverage.sh'
       TEST_RUNNER_PORT_MIN: "14000"
 
@@ -596,24 +597,21 @@ jobs:
         id: restore-cache
         uses: ./.github/actions/restore-caches
 
-      - name: Install packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends --no-upgrade -y \
-            clang llvm ccache build-essential cmake ninja-build pkgconf python3-pip python3-zmq \
-            libevent-dev libboost-dev libsqlite3-dev systemtap-sdt-dev libzmq3-dev \
-            qt6-base-dev qt6-tools-dev qt6-l10n-tools libqrencode-dev capnproto libcapnp-dev
-          sudo pip3 install --break-system-packages pycapnp
+      - name: Configure Docker
+        uses: ./.github/actions/configure-docker
 
-      - name: Run coverage build and tests
-        run: |
-          ./ci/test/04_run_coverage.sh all
+      - name: Clear unnecessary files
+        if: ${{ needs.runners.outputs.provider == 'gha' && true || false }} # Only needed on GHA runners
+        uses: ./.github/actions/clear-files
+
+      - name: CI script
+        run: ./ci/test_run_all.sh
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report-${{ github.run_id }}
-          path: build/coverage_report
+          path: ${{ env.BASE_BUILD_DIR }}/coverage_report
           if-no-files-found: error
 
       - name: Save caches
