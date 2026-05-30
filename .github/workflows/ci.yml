@@ -582,29 +582,46 @@ jobs:
 
     env:
       TEST_RUNNER_PORT_MIN: "14000"
+      CCACHE_DIR: ${{ runner.temp }}/ccache_dir
 
     steps:
       - *ANNOTATION_PR_NUMBER
 
       - *CHECKOUT
 
+      - name: Restore Ccache cache
+        id: ccache-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: coverage-ccache-${{ runner.os }}-${{ github.head_ref || github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            coverage-ccache-${{ runner.os }}-${{ github.head_ref || github.ref_name }}-
+            coverage-ccache-${{ runner.os }}-
+
       - name: Install packages
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --no-upgrade -y \
-            clang llvm build-essential cmake ninja-build pkgconf python3-pip python3-zmq \
+            clang llvm ccache build-essential cmake ninja-build pkgconf python3-pip python3-zmq \
             libevent-dev libboost-dev libsqlite3-dev systemtap-sdt-dev libzmq3-dev \
             qt6-base-dev qt6-tools-dev qt6-l10n-tools libqrencode-dev capnproto libcapnp-dev
           sudo pip3 install --break-system-packages pycapnp
 
       - name: Build with coverage instrumentation
         run: |
+          ccache --zero-stats
           cmake -B build -DCMAKE_C_COMPILER="clang" \
             -DCMAKE_CXX_COMPILER="clang++" \
+            -DCMAKE_C_COMPILER_LAUNCHER="ccache" \
+            -DCMAKE_CXX_COMPILER_LAUNCHER="ccache" \
             -DAPPEND_CFLAGS="-fprofile-instr-generate -fcoverage-mapping" \
             -DAPPEND_CXXFLAGS="-fprofile-instr-generate -fcoverage-mapping" \
             -DAPPEND_LDFLAGS="-fprofile-instr-generate -fcoverage-mapping"
           cmake --build build -j 1
+
+      - name: Show Ccache stats
+        run: ccache --show-stats --verbose
 
       - name: Run tests and merge coverage data
         run: |
@@ -635,6 +652,13 @@ jobs:
           name: coverage-report-${{ github.run_id }}
           path: build/coverage_report
           if-no-files-found: error
+
+      - name: Save Ccache cache
+        uses: actions/cache/save@v5
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.ccache-cache.outputs.cache-primary-key }}
 
   # lint:
   #   name: 'lint'
