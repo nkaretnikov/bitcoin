@@ -236,6 +236,7 @@ if [ "$RUN_COVERAGE" = "true" ]; then
     --show-expansions \
     --output-dir="${BASE_BUILD_DIR}/coverage_report" \
     --project-title="Bitcoin Core Coverage Report"
+  chmod -R a+rX "${BASE_BUILD_DIR}/coverage_report"
 fi
 
 if [ "${RUN_TIDY}" = "true" ]; then
