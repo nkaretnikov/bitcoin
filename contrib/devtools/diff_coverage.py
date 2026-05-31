@@ -28,32 +28,14 @@ def repo_root() -> Path:
 
 
 def tracked_files() -> tuple[set[str], dict[str, str | None]]:
-    tracked = run(["git", "ls-files"]).splitlines()
-    exact = set(tracked)
-    suffixes: dict[str, str | None] = {}
-    for path in tracked:
-        parts = Path(path).parts
-        for index in range(len(parts)):
-            suffix = os.fspath(Path(*parts[index:]))
-            suffixes[suffix] = path if suffix not in suffixes else None
-    return exact, suffixes
+    return set(run(["git", "ls-files"]).splitlines())
 
 
-def normalize_path(path_str: str, root: Path, exact: set[str], suffixes: dict[str, str | None]) -> str | None:
+def normalize_path(path_str: str, root: Path, exact: set[str]) -> str | None:
     path = Path(path_str)
-    candidates = [os.fspath(path)]
-    if path.is_absolute():
-        try:
-            candidates.append(os.fspath(path.relative_to(root)))
-        except ValueError:
-            pass
-    for candidate in candidates:
-        if candidate in exact:
-            return candidate
-    for index in range(len(path.parts)):
-        candidate = suffixes.get(os.fspath(Path(*path.parts[index:])))
-        if candidate:
-            return candidate
+    candidate = os.fspath(path.relative_to(root))
+    if candidate in exact:
+        return candidate
     return None
 
 
@@ -86,13 +68,13 @@ def file_line_count(path: Path) -> int:
     return max(1, len(path.read_text(encoding="utf-8", errors="replace").splitlines()))
 
 
-def coverage_by_file(json_path: Path, root: Path, exact: set[str], suffixes: dict[str, str | None]) -> dict[str, dict[int, bool]]:
+def coverage_by_file(json_path: Path, root: Path, exact: set[str]) -> dict[str, dict[int, bool]]:
     exported = json.loads(json_path.read_text())
     result: dict[str, dict[int, bool]] = {}
 
     for entry in exported.get("data", []):
         for file_entry in entry.get("files", []):
-            filename = normalize_path(file_entry["filename"], root, exact, suffixes)
+            filename = normalize_path(file_entry["filename"], root, exact)
             if filename is None:
                 continue
 
@@ -164,10 +146,10 @@ def main() -> int:
     args = parser.parse_args()
 
     root = repo_root()
-    exact, suffixes = tracked_files()
+    exact = tracked_files()
     summary, details = summarize(
         changed_lines(args.base),
-        coverage_by_file(args.coverage_json.resolve(), root, exact, suffixes),
+        coverage_by_file(args.coverage_json.resolve(), root, exact),
     )
 
     print(summary)
