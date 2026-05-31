@@ -626,7 +626,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report-${{ github.run_id }}
-          path: ${{ env.BASE_BUILD_DIR }}/coverage_report
+          path: |
+            ${{ env.BASE_BUILD_DIR }}/coverage_report
+            ${{ env.BASE_BUILD_DIR }}/coverage.json
           if-no-files-found: error
 
       - name: Save caches
