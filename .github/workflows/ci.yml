@@ -579,6 +579,10 @@ jobs:
     runs-on: ${{ needs.runners.outputs.provider == 'cirrus' && 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-md' || 'ubuntu-24.04' }}
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
     timeout-minutes: 240
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
 
     env:
       DANGER_CI_ON_HOST_FOLDERS: 1
