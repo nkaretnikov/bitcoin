@@ -111,12 +111,12 @@ def summarize(changed: dict[str, set[int]], covered: dict[str, dict[int, bool]])
     total_covered = 0
 
     for filename in sorted(changed):
-        executable_lines = covered.get(filename, {})
-        relevant = sorted(lineno for lineno in changed[filename] if lineno in executable_lines)
+        file_coverage = covered.get(filename, {})
+        relevant = sorted(lineno for lineno in changed[filename] if lineno in file_coverage)
         if not relevant:
             continue
 
-        uncovered = [lineno for lineno in relevant if not executable_lines[lineno]]
+        uncovered = [lineno for lineno in relevant if not file_coverage[lineno]]
         covered_count = len(relevant) - len(uncovered)
         total_relevant += len(relevant)
         total_covered += covered_count
