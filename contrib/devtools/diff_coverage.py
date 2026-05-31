@@ -121,13 +121,10 @@ def summarize(changed: dict[str, set[int]], covered: dict[str, dict[int, bool]])
         total_relevant += len(relevant)
         total_covered += covered_count
 
+        summary = f"- `{filename}`: {covered_count}/{len(relevant)} changed executable lines covered"
         if uncovered:
-            details.append(
-                f"- `{filename}`: {covered_count}/{len(relevant)} changed executable lines covered; "
-                f"uncovered lines: {', '.join(str(line) for line in uncovered)}"
-            )
-        else:
-            details.append(f"- `{filename}`: {covered_count}/{len(relevant)} changed executable lines covered")
+            summary += f"; uncovered lines: {', '.join(str(line) for line in uncovered)}"
+        details.append(summary)
 
     if total_relevant == 0:
         return "No changed executable lines found in the diff.", details
