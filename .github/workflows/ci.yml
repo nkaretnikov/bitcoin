@@ -611,6 +611,15 @@ jobs:
       - name: CI script
         run: ./ci/test_run_all.sh
 
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report-${{ github.run_id }}
+          path: |
+            ${{ env.BASE_BUILD_DIR }}/coverage_report
+            ${{ env.BASE_BUILD_DIR }}/coverage.json
+          if-no-files-found: error
+
       - name: Fetch PR base
         if: github.event_name == 'pull_request'
         run: git fetch origin "${GITHUB_BASE_REF}"
@@ -621,15 +630,6 @@ jobs:
           python3 ./contrib/devtools/diff_coverage.py \
             --coverage-json "${BASE_BUILD_DIR}/coverage.json" \
             --base "origin/${GITHUB_BASE_REF}"
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-report-${{ github.run_id }}
-          path: |
-            ${{ env.BASE_BUILD_DIR }}/coverage_report
-            ${{ env.BASE_BUILD_DIR }}/coverage.json
-          if-no-files-found: error
 
       - name: Save caches
         uses: ./.github/actions/save-caches
