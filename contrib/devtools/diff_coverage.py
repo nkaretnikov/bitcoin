@@ -31,6 +31,13 @@ def tracked_files() -> tuple[set[str], dict[str, str | None]]:
     return set(run(["git", "ls-files"]).splitlines())
 
 
+def remap_path(path_str: str, path_prefix_from: Path | None, path_prefix_to: Path | None) -> str:
+    if path_prefix_from is not None and path_prefix_to is not None:
+        path = Path(path_str)
+        return os.fspath(path_prefix_to / path.relative_to(path_prefix_from))
+    return path_str
+
+
 def normalize_path(path_str: str, root: Path, exact: set[str]) -> str | None:
     path = Path(path_str)
     candidate = os.fspath(path.relative_to(root))
@@ -69,13 +76,20 @@ def file_line_count(path: Path) -> int:
 
 
 # https://github.com/llvm/llvm-project/blob/e3574d46e0de8d2c96beb0d092812a3cab153db7/llvm/tools/llvm-cov/CoverageExporterJson.cpp
-def coverage_by_file(json_path: Path, root: Path, exact: set[str]) -> dict[str, dict[int, bool]]:
+def coverage_by_file(
+    json_path: Path,
+    root: Path,
+    exact: set[str],
+    path_prefix_from: Path | None,
+    path_prefix_to: Path | None,
+) -> dict[str, dict[int, bool]]:
     exported = json.loads(json_path.read_text())
     result: dict[str, dict[int, bool]] = {}
 
     for entry in exported.get("data", []):
         for file_entry in entry.get("files", []):
-            filename = normalize_path(file_entry["filename"], root, exact)
+            remapped_filename = remap_path(file_entry["filename"], path_prefix_from, path_prefix_to)
+            filename = normalize_path(remapped_filename, root, exact)
             if filename is None:
                 continue
 
@@ -144,13 +158,21 @@ def main() -> int:
     parser.add_argument("--coverage-json", required=True, type=Path)
     parser.add_argument("--base", required=True, help="Diff base ref, e.g. origin/master")
     parser.add_argument("--comment-file", type=Path, help="Optional markdown output for a PR comment")
+    parser.add_argument("--path-prefix-from", type=Path, help="Optional coverage path prefix to replace")
+    parser.add_argument("--path-prefix-to", type=Path, help="Optional replacement prefix for coverage paths")
     args = parser.parse_args()
 
     root = repo_root()
     exact = tracked_files()
     summary, details = summarize(
         changed_lines(args.base),
-        coverage_by_file(args.coverage_json.resolve(), root, exact),
+        coverage_by_file(
+            args.coverage_json.resolve(),
+            root,
+            exact,
+            args.path_prefix_from,
+            args.path_prefix_to,
+        ),
     )
 
     print(summary)

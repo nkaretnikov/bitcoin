@@ -634,6 +634,8 @@ jobs:
           python3 ./contrib/devtools/diff_coverage.py \
             --coverage-json "${BASE_BUILD_DIR}/coverage.json" \
             --base "origin/${GITHUB_BASE_REF}" \
+            --path-prefix-from "${BASE_BUILD_DIR}" \
+            --path-prefix-to "${GITHUB_WORKSPACE}" \
             --comment-file "${BASE_BUILD_DIR}/diff_coverage_comment.md"
 
       - name: Comment diff coverage
