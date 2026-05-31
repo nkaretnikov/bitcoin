@@ -588,7 +588,11 @@ jobs:
     steps:
       - *ANNOTATION_PR_NUMBER
 
-      - *CHECKOUT
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: *CHECKOUT_REF_TMPL
+          fetch-depth: 0
 
       - name: Configure environment
         uses: ./.github/actions/configure-environment
