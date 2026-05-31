@@ -65,9 +65,10 @@ def changed_lines(base: str) -> dict[str, set[int]]:
 
 
 def file_line_count(path: Path) -> int:
-    return max(1, len(path.read_text(encoding="utf-8", errors="replace").splitlines()))
+    return len(path.read_text(encoding="utf-8", errors="replace").splitlines())
 
 
+# https://github.com/llvm/llvm-project/blob/e3574d46e0de8d2c96beb0d092812a3cab153db7/llvm/tools/llvm-cov/CoverageExporterJson.cpp
 def coverage_by_file(json_path: Path, root: Path, exact: set[str]) -> dict[str, dict[int, bool]]:
     exported = json.loads(json_path.read_text())
     result: dict[str, dict[int, bool]] = {}
@@ -79,7 +80,10 @@ def coverage_by_file(json_path: Path, root: Path, exact: set[str]) -> dict[str, 
                 continue
 
             source_path = root / filename
-            last_line = file_line_count(source_path) if source_path.exists() else 1
+            last_line = file_line_count(source_path) if source_path.exists() else 0
+            if last_line == 0:
+                continue
+
             line_coverage: dict[int, bool] = {}
             segments = file_entry.get("segments", [])
 
