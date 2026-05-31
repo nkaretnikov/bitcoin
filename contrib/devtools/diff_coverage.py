@@ -16,6 +16,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+COMMENT_MARKER = "<!-- diff-coverage -->"
+
 
 def run(cmd: list[str]) -> str:
     return subprocess.check_output(cmd, text=True)
@@ -157,10 +159,20 @@ def summarize(changed: dict[str, set[int]], coverage: dict[str, dict[int, bool]]
     return lines, total_covered, total_relevant
 
 
+def build_markdown(summary: str, lines: list[str]) -> str:
+    body = [COMMENT_MARKER, "## Diff Coverage", "", summary]
+    if lines:
+        body.append("")
+        body.extend(lines)
+    body.append("")
+    return "\n".join(body)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--coverage-json", required=True, type=Path)
     parser.add_argument("--base", required=True, help="Diff base ref, e.g. origin/master")
+    parser.add_argument("--comment-file", type=Path, help="Optional markdown output for a PR comment")
     args = parser.parse_args()
 
     repo_root = get_repo_root()
@@ -178,16 +190,15 @@ def main() -> int:
     for line in lines:
         print(line)
 
+    markdown = build_markdown(summary, lines)
+
     step_summary = os.getenv("GITHUB_STEP_SUMMARY")
     if step_summary:
         with open(step_summary, "a", encoding="utf-8") as fh:
-            fh.write("## Diff Coverage\n")
-            fh.write(summary + "\n")
-            if lines:
-                fh.write("\n")
-                for line in lines:
-                    fh.write(line + "\n")
-            fh.write("\n")
+            fh.write(markdown + "\n")
+
+    if args.comment_file:
+        args.comment_file.write_text(markdown + "\n", encoding="utf-8")
     return 0
 
 
