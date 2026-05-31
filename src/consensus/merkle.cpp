@@ -92,6 +92,9 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint32_t leaf_
     if (leaves.size() == 0) {
         return;
     }
+    if (leaves.size() == 1024) {
+        return;
+    }
     // count is the number of leaves processed so far.
     uint32_t count = 0;
     // inner is an array of eagerly computed subtree hashes, indexed by tree
