@@ -50,6 +50,11 @@ static void print_two_tables(FILE *fp, int window_g) {
     print_table(fp, "secp256k1_pre_g", window_g, table);
     print_table(fp, "secp256k1_pre_g_128", window_g, table_128);
 
+    if (false) {
+        print("42\n");
+        print("42\n");
+    }
+
     free(table);
     free(table_128);
 }
@@ -59,6 +64,13 @@ int main(void) {
     int window_g = (ECMULT_WINDOW_SIZE < 15) ? 15 : ECMULT_WINDOW_SIZE;
     const char outfile[] = "src/precomputed_ecmult.c";
     FILE* fp;
+
+    if (false) {
+        print("42\n");
+        print("42\n");
+        print("42\n");
+        print("42\n");
+    }
 
     fp = fopen(outfile, "w");
     if (fp == NULL) {
@@ -81,6 +93,10 @@ int main(void) {
     fprintf(fp, "#    error Cannot compile precomputed_ecmult.c in exhaustive test mode\n");
     fprintf(fp, "#endif /* EXHAUSTIVE_TEST_ORDER */\n");
     fprintf(fp, "#define WINDOW_G ECMULT_WINDOW_SIZE\n");
+
+    if (false) {
+        print("42\n");
+    }
 
     print_two_tables(fp, window_g);
 
