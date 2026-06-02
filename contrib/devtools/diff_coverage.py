@@ -71,8 +71,65 @@ def changed_lines(base: str) -> dict[str, set[int]]:
     return changed
 
 
+def file_lines(path: Path) -> list[str]:
+    return path.read_text(encoding="utf-8", errors="replace").splitlines()
+
+
 def file_line_count(path: Path) -> int:
-    return len(path.read_text(encoding="utf-8", errors="replace").splitlines())
+    return len(file_lines(path))
+
+
+def grouped_lines(lines: list[int]) -> list[tuple[int, int]]:
+    if not lines:
+        return []
+
+    groups: list[tuple[int, int]] = []
+    start = end = lines[0]
+
+    for lineno in lines[1:]:
+        if lineno == end + 1:
+            end = lineno
+            continue
+        groups.append((start, end))
+        start = end = lineno
+
+    groups.append((start, end))
+    return groups
+
+
+def format_line_range(start: int, end: int) -> str:
+    if start == end:
+        return str(start)
+    return f"{start}-{end}"
+
+
+def code_fence(lines: list[str]) -> str:
+    return "~~~~" if any("```" in line for line in lines) else "```"
+
+
+def snippet_markdown(filename: str, uncovered: list[int], root: Path) -> str:
+    source_lines = file_lines(root / filename)
+    sections: list[str] = []
+
+    for start, end in grouped_lines(uncovered):
+        snippet_lines = [
+            f"{lineno:>4} | {source_lines[lineno - 1]}"
+            for lineno in range(start, end + 1)
+            if 0 < lineno <= len(source_lines)
+        ]
+        if not snippet_lines:
+            continue
+        fence = code_fence(snippet_lines)
+        sections.extend(
+            [
+                f"`{filename}:{format_line_range(start, end)}`",
+                fence,
+                *snippet_lines,
+                fence,
+            ]
+        )
+
+    return "\n".join(sections)
 
 
 # https://github.com/llvm/llvm-project/blob/e3574d46e0de8d2c96beb0d092812a3cab153db7/llvm/tools/llvm-cov/CoverageExporterJson.cpp
@@ -119,7 +176,7 @@ def coverage_by_file(
     return result
 
 
-def summarize(changed: dict[str, set[int]], covered: dict[str, dict[int, bool]]) -> tuple[str, list[str]]:
+def summarize(changed: dict[str, set[int]], covered: dict[str, dict[int, bool]], root: Path) -> tuple[str, list[str]]:
     details: list[str] = []
     total_relevant = 0
     total_covered = 0
@@ -137,7 +194,7 @@ def summarize(changed: dict[str, set[int]], covered: dict[str, dict[int, bool]])
 
         summary = f"- `{filename}`: {covered_count}/{len(relevant)} changed executable lines covered"
         if uncovered:
-            summary += f"; uncovered lines: {', '.join(str(line) for line in uncovered)}"
+            summary = "\n".join([summary, "", snippet_markdown(filename, uncovered, root)])
         details.append(summary)
 
     if total_relevant == 0:
@@ -173,6 +230,7 @@ def main() -> int:
             args.path_prefix_from,
             args.path_prefix_to,
         ),
+        root,
     )
 
     print(summary)
