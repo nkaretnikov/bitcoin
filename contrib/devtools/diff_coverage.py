@@ -142,12 +142,19 @@ def coverage_by_file(
 ) -> dict[str, dict[int, bool]]:
     exported = json.loads(json_path.read_text())
     result: dict[str, dict[int, bool]] = {}
+    skipped_paths: set[str] = set()
 
     for entry in exported.get("data", []):
         for file_entry in entry.get("files", []):
             remapped_filename = remap_path(file_entry["filename"], path_prefix_from, path_prefix_to)
             filename = normalize_path(remapped_filename, root, exact)
             if filename is None:
+                if remapped_filename not in skipped_paths:
+                    skipped_paths.add(remapped_filename)
+                    print(
+                        f"warning: skipping coverage for unmatched file: {remapped_filename}",
+                        file=sys.stderr,
+                    )
                 continue
 
             source_path = root / filename
