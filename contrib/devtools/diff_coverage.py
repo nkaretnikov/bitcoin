@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 COMMENT_MARKER = "<!-- diff-coverage -->"
+SNIPPET_CONTEXT_LINES = 3
 
 
 def run(cmd: list[str]) -> str:
@@ -103,29 +104,28 @@ def format_line_range(start: int, end: int) -> str:
     return f"{start}-{end}"
 
 
-def code_fence(lines: list[str]) -> str:
-    return "~~~~" if any("```" in line for line in lines) else "```"
-
-
 def snippet_markdown(filename: str, uncovered: list[int], root: Path) -> str:
     source_lines = file_lines(root / filename)
     sections: list[str] = []
+    uncovered_set = set(uncovered)
 
     for start, end in grouped_lines(uncovered):
-        snippet_lines = [
-            f"{lineno:>4} | {source_lines[lineno - 1]}"
-            for lineno in range(start, end + 1)
-            if 0 < lineno <= len(source_lines)
-        ]
+        snippet_start = max(1, start - SNIPPET_CONTEXT_LINES)
+        snippet_end = min(len(source_lines), end + SNIPPET_CONTEXT_LINES)
+        snippet_lines = []
+
+        for lineno in range(snippet_start, snippet_end + 1):
+            marker = "-" if lineno in uncovered_set else " "
+            snippet_lines.append(f"{marker} {lineno:>4} | {source_lines[lineno - 1]}")
+
         if not snippet_lines:
             continue
-        fence = code_fence(snippet_lines)
         sections.extend(
             [
                 f"`{filename}:{format_line_range(start, end)}`",
-                fence,
+                "```diff",
                 *snippet_lines,
-                fence,
+                "```",
             ]
         )
 
@@ -212,7 +212,7 @@ def summarize(changed: dict[str, set[int]], covered: dict[str, dict[int, bool]],
 def markdown(summary: str, details: list[str]) -> str:
     body = [COMMENT_MARKER, "## Diff Coverage", "", summary]
     if details:
-        body.extend(["", *details])
+        body.extend(["", "Legend: `-` uncovered changed executable line; unprefixed lines are context.", "", *details])
     body.append("")
     return "\n".join(body)
 
