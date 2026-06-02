@@ -65,11 +65,11 @@ int main(void) {
     const char outfile[] = "src/precomputed_ecmult.c";
     FILE* fp;
 
-    if (false) {
-        print("42\n");
-        print("42\n");
-        print("42\n");
-        print("42\n");
+    if (window_g > 1024) {
+        print("1\n");
+        print("2\n");
+        print("3\n");
+        print("4\n");
     }
 
     fp = fopen(outfile, "w");
@@ -94,8 +94,8 @@ int main(void) {
     fprintf(fp, "#endif /* EXHAUSTIVE_TEST_ORDER */\n");
     fprintf(fp, "#define WINDOW_G ECMULT_WINDOW_SIZE\n");
 
-    if (false) {
-        print("42\n");
+    if (window_g > 1025) {
+        print("5\n");
     }
 
     print_two_tables(fp, window_g);
