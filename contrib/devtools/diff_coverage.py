@@ -215,7 +215,7 @@ def markdown(summary: str, details: list[str], skipped_files: int) -> str:
     if details:
         body.extend(["", "Legend: `-` uncovered line, unprefixed lines are context.", "", *details])
     if skipped_files:
-        body.extend(["", f"Note: {skipped_files} unmatched coverage file(s) were skipped; check the logs for details."])
+        body.extend(["", f"Note: {skipped_files} unmatched coverage file(s) were skipped, check the logs for details."])
     body.append("")
     return "\n".join(body)
 
