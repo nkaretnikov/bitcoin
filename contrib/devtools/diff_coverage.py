@@ -206,7 +206,8 @@ def summarize(changed: dict[str, set[int]], covered: dict[str, dict[int, bool]],
 
     if total_relevant == 0:
         return "No changed executable lines found in the diff.", details
-    return f"Changed executable lines covered: {total_covered}/{total_relevant}", details
+    percent_covered = (total_covered * 100) // total_relevant
+    return f"Changed executable lines covered: {total_covered}/{total_relevant} ({percent_covered}%)", details
 
 
 def markdown(summary: str, details: list[str]) -> str:
