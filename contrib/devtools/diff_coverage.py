@@ -122,10 +122,10 @@ def snippet_markdown(filename: str, uncovered: list[int], root: Path) -> str:
             continue
         sections.extend(
             [
-                f"`{filename}:{format_line_range(start, end)}`",
                 "```diff",
                 *snippet_lines,
                 "```",
+                ""
             ]
         )
 
