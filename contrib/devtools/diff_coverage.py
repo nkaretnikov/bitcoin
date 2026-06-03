@@ -213,7 +213,7 @@ def summarize(changed: dict[str, set[int]], covered: dict[str, dict[int, bool]],
 def markdown(summary: str, details: list[str]) -> str:
     body = [COMMENT_MARKER, "## Diff Coverage", "", summary]
     if details:
-        body.extend(["", "Legend: `-` uncovered changed executable line; unprefixed lines are context.", "", *details])
+        body.extend(["", "Legend: `-` uncovered line, unprefixed lines are context.", "", *details])
     body.append("")
     return "\n".join(body)
 
