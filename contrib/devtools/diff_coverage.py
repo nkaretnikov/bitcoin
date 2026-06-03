@@ -139,7 +139,7 @@ def coverage_by_file(
     exact: set[str],
     path_prefix_from: Path | None,
     path_prefix_to: Path | None,
-) -> dict[str, dict[int, bool]]:
+) -> tuple[dict[str, dict[int, bool]], int]:
     exported = json.loads(json_path.read_text())
     result: dict[str, dict[int, bool]] = {}
     skipped_paths: set[str] = set()
@@ -180,7 +180,7 @@ def coverage_by_file(
 
             result[filename] = line_coverage
 
-    return result
+    return result, len(skipped_paths)
 
 
 def summarize(changed: dict[str, set[int]], covered: dict[str, dict[int, bool]], root: Path) -> tuple[str, list[str]]:
@@ -210,10 +210,12 @@ def summarize(changed: dict[str, set[int]], covered: dict[str, dict[int, bool]],
     return f"Changed executable lines covered: {total_covered}/{total_relevant} ({percent_covered}%)", details
 
 
-def markdown(summary: str, details: list[str]) -> str:
+def markdown(summary: str, details: list[str], skipped_files: int) -> str:
     body = [COMMENT_MARKER, "## Diff Coverage", "", summary]
     if details:
         body.extend(["", "Legend: `-` uncovered line, unprefixed lines are context.", "", *details])
+    if skipped_files:
+        body.extend(["", f"Note: {skipped_files} unmatched coverage file(s) were skipped; check the logs for details."])
     body.append("")
     return "\n".join(body)
 
@@ -229,23 +231,20 @@ def main() -> int:
 
     root = repo_root()
     exact = tracked_files()
-    summary, details = summarize(
-        changed_lines(args.base),
-        coverage_by_file(
-            args.coverage_json.resolve(),
-            root,
-            exact,
-            args.path_prefix_from,
-            args.path_prefix_to,
-        ),
+    covered, skipped_files = coverage_by_file(
+        args.coverage_json.resolve(),
         root,
+        exact,
+        args.path_prefix_from,
+        args.path_prefix_to,
     )
+    summary, details = summarize(changed_lines(args.base), covered, root)
 
     print(summary)
     for line in details:
         print(line)
 
-    output = markdown(summary, details) + "\n"
+    output = markdown(summary, details, skipped_files) + "\n"
 
     if os.getenv("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as file:
