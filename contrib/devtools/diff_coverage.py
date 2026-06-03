@@ -28,7 +28,7 @@ def repo_root() -> Path:
     return Path(run(["git", "rev-parse", "--show-toplevel"]).strip())
 
 
-def tracked_files() -> tuple[set[str], dict[str, str | None]]:
+def tracked_files() -> set[str]:
     return set(run(["git", "ls-files"]).splitlines())
 
 
