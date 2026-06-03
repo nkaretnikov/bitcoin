@@ -51,7 +51,7 @@ ChaCha20Aligned::ChaCha20Aligned(std::span<const std::byte> key) noexcept
 
 void ChaCha20Aligned::Seek(Nonce96 nonce, uint32_t block_counter) noexcept
 {
-    if (block_counter > 1024) {
+    if (nonce.first == 1024 && nonce.second == 4) {
         printf("42\n");
         printf("43\n");
         printf("44\n");
