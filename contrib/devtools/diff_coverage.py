@@ -229,6 +229,16 @@ def main() -> int:
     parser.add_argument("--path-prefix-to", type=Path, help="Optional replacement prefix for coverage paths")
     args = parser.parse_args()
 
+    print(
+        "info: diff_coverage.py options: "
+        f"coverage_json={args.coverage_json} "
+        f"base={args.base} "
+        f"comment_file={args.comment_file} "
+        f"path_prefix_from={args.path_prefix_from} "
+        f"path_prefix_to={args.path_prefix_to}",
+        file=sys.stderr,
+    )
+
     root = repo_root()
     exact = tracked_files()
     covered, skipped_files = coverage_by_file(
